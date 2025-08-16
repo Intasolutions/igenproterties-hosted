@@ -3,6 +3,7 @@ from companies.models import Company
 from users.models import User
 from contacts.models import Contact
 
+
 class Project(models.Model):
     PROJECT_TYPE_CHOICES = [
         ('internal', 'Internal'),
@@ -27,6 +28,14 @@ class Project(models.Model):
         max_length=50, choices=PROJECT_STATUS_CHOICES, default='proposed'
     )
 
+    # ---- Address (all optional) ----
+    landmark = models.CharField(max_length=255, blank=True)
+    pincode = models.CharField(max_length=10, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    district = models.CharField(max_length=100, blank=True)
+    state = models.CharField(max_length=100, blank=True)    # was default='Kerala'
+    country = models.CharField(max_length=100, blank=True)  # was default='India'
+
     # Many stakeholders can be part of a project
     stakeholders = models.ManyToManyField(
         Contact,
@@ -46,13 +55,6 @@ class Project(models.Model):
     expected_return = models.DecimalField(
         max_digits=12, decimal_places=2, blank=True, null=True
     )
-
-    landmark = models.CharField(max_length=255, blank=True)
-    pincode = models.CharField(max_length=10, blank=True)
-    city = models.CharField(max_length=100, blank=True)
-    district = models.CharField(max_length=100)
-    state = models.CharField(max_length=100, default='Kerala')
-    country = models.CharField(max_length=100, default='India')
 
     property_manager = models.ForeignKey(
         User,
@@ -107,10 +109,14 @@ class Property(models.Model):
         related_name='properties'
     )
     name = models.CharField(max_length=255)
-    location = models.CharField(max_length=512)
+
+    # ---- Address (optional) ----
+    location = models.CharField(max_length=512, blank=True)  # ← now optional
+
     purchase_date = models.DateField()
     purchase_price = models.DecimalField(max_digits=15, decimal_places=2)
     expected_rent = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default='active'
     )

@@ -2,11 +2,14 @@ from django.db import models
 from companies.models import Company
 from properties.models import Property
 from projects.models import Project
+# NOTE: don't import Contact directly to avoid circular imports; use the string path.
+
 
 class Entity(models.Model):
     ENTITY_TYPES = [
         ('Property', 'Property'),
         ('Project', 'Project'),
+        ('Contact', 'Contact'),   # ✅ added
         ('Internal', 'Internal'),
     ]
 
@@ -15,55 +18,64 @@ class Entity(models.Model):
         ('Inactive', 'Inactive'),
     ]
 
-    # ✅ Removed `entity_id` and allowed Django to auto-create `id`
     company = models.ForeignKey(
         Company,
         on_delete=models.CASCADE,
         related_name='entities',
         help_text="Company this entity belongs to",
         null=True,
-        blank=True
+        blank=True,
     )
     name = models.CharField(
         max_length=255,
-        help_text="Name of the entity"
+        help_text="Name of the entity",
     )
     entity_type = models.CharField(
         max_length=20,
         choices=ENTITY_TYPES,
-        help_text="Entity type: Property, Project, or Internal"
+        help_text="Entity type: Property, Project, Contact, or Internal",
     )
+
     linked_property = models.ForeignKey(
         Property,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        help_text="Linked property if entity_type=Property"
+        help_text="Linked property if entity_type=Property",
     )
     linked_project = models.ForeignKey(
         Project,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        help_text="Linked project if entity_type=Project"
+        help_text="Linked project if entity_type=Project",
     )
+    linked_contact = models.ForeignKey(               # ✅ added
+        'contacts.Contact',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="Linked contact if entity_type=Contact",
+    )
+
     status = models.CharField(
         max_length=10,
         choices=STATUS_CHOICES,
         default='Active',
-        help_text="Entity status: Active or Inactive"
+        help_text="Entity status: Active or Inactive",
     )
     remarks = models.TextField(
         blank=True,
-        help_text="Optional remarks about the entity"
+        help_text="Optional remarks about the entity",
     )
+
     created_at = models.DateTimeField(
         auto_now_add=True,
-        help_text="Timestamp when the entity was created"
+        help_text="Timestamp when the entity was created",
     )
     updated_at = models.DateTimeField(
         auto_now=True,
-        help_text="Timestamp when the entity was last updated"
+        help_text="Timestamp when the entity was last updated",
     )
 
     class Meta:

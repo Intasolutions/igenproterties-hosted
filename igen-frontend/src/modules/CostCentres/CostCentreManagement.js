@@ -1,30 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef } from 'react';
 import API from '../../api/axios';
 import {
   Button, Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, MenuItem, Card, CardContent, Typography, IconButton,
   Snackbar, Alert, Tooltip, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, TablePagination,Slide
+  TableContainer, TableHead, TableRow, TablePagination, Slide,
+  FormControl, FormLabel, RadioGroup, FormControlLabel, Radio
 } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 import SearchBar from '../../components/SearchBar';
 import ConfirmDialog from '../../components/ConfirmDialog';
 
-
-const Transition = React.forwardRef(function Transition(props, ref) {
-  return <Slide direction="up" ref={ref} {...props} />; 
+const Transition = forwardRef(function Transition(props, ref) {
+  return <Slide direction="up" ref={ref} {...props} />;
 });
 
 export default function CostCentreManagement() {
-  const [companies, setCompanies] = useState([])
+  const [companies, setCompanies] = useState([]);
   const [costCentres, setCostCentres] = useState([]);
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const[searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState('');
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-const [selectedCostCentre, setSelectedCostCentre] = useState(null);
-
+  const [selectedCostCentre, setSelectedCostCentre] = useState(null);
 
   const [form, setForm] = useState({
     company: '',
@@ -39,6 +38,7 @@ const [selectedCostCentre, setSelectedCostCentre] = useState(null);
     name: '',
     transaction_direction: '',
     notes: '',
+    is_active: true
   });
 
   const [formErrors, setFormErrors] = useState({});
@@ -88,6 +88,22 @@ const [selectedCostCentre, setSelectedCostCentre] = useState(null);
     return errors;
   };
 
+    const defaultForm = {
+    company: '',
+    name: '',
+    transaction_direction: '',
+    notes: ''
+  };
+
+  const defaultEditForm = {
+    cost_centre_id: '',
+    company: '',
+    name: '',
+    transaction_direction: '',
+    notes: '',
+    is_active: true
+  };
+
   const handleAddCostCentre = async () => {
     const errors = validateForm(form);
     if (Object.keys(errors).length > 0) {
@@ -95,35 +111,28 @@ const [selectedCostCentre, setSelectedCostCentre] = useState(null);
       return;
     }
     try {
-      await API.post('cost-centres/', form)
+      await API.post('cost-centres/', form);
       setSnackbar({ open: true, message: 'Cost Centre added successfully!', severity: 'success' });
       fetchCostCentres();
       setOpen(false);
       setForm({ company: '', name: '', transaction_direction: '', notes: '' });
       setFormErrors({});
-    }catch (err) {
- 
-  if (err.response?.status == 400) {
-    
-    const backendErrors = {name:["The fields company, name must make a unique set."]};
-    const newFormErrors = { ...formErrors };
-   
-
-    if (backendErrors.name) {
-      newFormErrors.name = backendErrors.name[0]; 
-
+    } catch (err) {
+      if (err.response?.status === 400) {
+        const backendErrors = err.response.data;
+        const newFormErrors = { ...formErrors };
+        if (backendErrors.name) {
+          newFormErrors.name = backendErrors.name[0];
+        }
+        setFormErrors(newFormErrors);
+      } else {
+        setSnackbar({
+          open: true,
+          message: err.response?.data?.detail || 'Failed to add cost centre',
+          severity: 'error',
+        });
+      }
     }
-
-    setFormErrors(newFormErrors);
-  } else {
-    setSnackbar({
-      open: true,
-      message: err.response?.data?.detail || 'Failed to add cost centre',
-      severity: 'error',
-    });
-  }
-}
-
   };
 
   const handleRealTimeValidation = (field, value, setForm, form, setErrors) => {
@@ -140,6 +149,7 @@ const [selectedCostCentre, setSelectedCostCentre] = useState(null);
       name: costCentre.name,
       transaction_direction: costCentre.transaction_direction,
       notes: costCentre.notes,
+      is_active: costCentre.is_active
     });
     setEditFormErrors({});
     setEditOpen(true);
@@ -157,25 +167,22 @@ const [selectedCostCentre, setSelectedCostCentre] = useState(null);
       fetchCostCentres();
       setEditOpen(false);
     } catch (err) {
-  if (err.response?.status === 400) {
-    const backendErrors = err.response.data;
-    const newFormErrors = { ...editFormErrors };
-
-    if (backendErrors.name) {
-      newFormErrors.name = backendErrors.name[0]; 
-        setSnackbar({ open: true, message: backendErrors.name[0], severity: 'error' });  // ✅ Inline duplicate name error
+      if (err.response?.status === 400) {
+        const backendErrors = err.response.data;
+        const newFormErrors = { ...editFormErrors };
+        if (backendErrors.name) {
+          newFormErrors.name = backendErrors.name[0];
+          setSnackbar({ open: true, message: backendErrors.name[0], severity: 'error' });
+        }
+        setEditFormErrors(newFormErrors);
+      } else {
+        setSnackbar({
+          open: true,
+          message: err.response?.data?.detail || 'Failed to update cost centre',
+          severity: 'error',
+        });
+      }
     }
-
-    setEditFormErrors(newFormErrors);
-  } else {
-    setSnackbar({
-      open: true,
-      message: err.response?.data?.detail || 'Failed to update cost centre',
-      severity: 'error',
-    });
-  }
-}
-
   };
 
   const deleteCostCentre = async (id) => {
@@ -188,46 +195,41 @@ const [selectedCostCentre, setSelectedCostCentre] = useState(null);
     }
   };
 
+  const handleConfirmAction = async () => {
+    if (!selectedCostCentre) return;
 
-const handleConfirmAction = async () => {
-  if (!selectedCostCentre) return;
-
-  try {
-    if (selectedCostCentre.is_active) {
-      // Soft delete
-      await API.delete(`cost-centres/${selectedCostCentre.cost_centre_id}/`);
-      setSnackbar({ open: true, message: 'Cost Centre deactivated.', severity: 'success' });
-    } else {
-      // Reactivate
-      await API.patch(`cost-centres/${selectedCostCentre.cost_centre_id}/`, { is_active: true });
-      setSnackbar({ open: true, message: 'Cost Centre reactivated.', severity: 'success' });
+    try {
+      if (selectedCostCentre.is_active) {
+        await API.delete(`cost-centres/${selectedCostCentre.cost_centre_id}/`);
+        setSnackbar({ open: true, message: 'Cost Centre deactivated.', severity: 'success' });
+      } else {
+        await API.patch(`cost-centres/${selectedCostCentre.cost_centre_id}/`, { is_active: true });
+        setSnackbar({ open: true, message: 'Cost Centre reactivated.', severity: 'success' });
+      }
+      fetchCostCentres();
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Action failed.', severity: 'error' });
+    } finally {
+      setConfirmDialogOpen(false);
+      setSelectedCostCentre(null);
     }
+  };
 
-    fetchCostCentres();
-  } catch (err) {
-    setSnackbar({ open: true, message: 'Action failed.', severity: 'error' });
-  } finally {
-    setConfirmDialogOpen(false);
-    setSelectedCostCentre(null);
-  }
-};
-
-
-    const filteredcostcenter = costCentres.filter((c) =>
- c.name.toLowerCase().includes(searchQuery.toLowerCase())
-);
+  const filteredcostcenter = costCentres.filter((c) =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.company_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="p-[35px]">
-         <Typography variant="h5" fontWeight="bold">Cost Centre Management</Typography>
+      <Typography variant="h5" fontWeight="bold">Cost Centre Management</Typography>
       <div className="flex justify-between items-center mb-6 mt-6">
-         <SearchBar
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  label="Search User"
-                  placeholder="Enter Account Name to search"
-                />
-     
+        <SearchBar
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          label="Search Cost Centre"
+          placeholder="Search by Cost Centre Name or Company"
+        />
         <Button variant="contained" color="primary" onClick={() => setOpen(true)}>Add Cost Centre</Button>
       </div>
 
@@ -242,38 +244,37 @@ const handleConfirmAction = async () => {
                   <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Direction</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Notes</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Active</TableCell>
+                  {/* <TableCell sx={{ fontWeight: 'bold' }}>Active</TableCell> */}
                   <TableCell sx={{ fontWeight: 'bold' }} align="center">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {filteredcostcenter.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((c, index) => (
-             <TableRow
-  key={c.cost_centre_id}
-  hover
-  sx={{
-    backgroundColor: c.is_active ? '#e8f5e9' : '#fffde7' // ✅ green for active, yellow for inactive
-  }}
->
+                  <TableRow
+                    key={c.cost_centre_id}
+                    hover
+                    sx={{
+                      backgroundColor: c.is_active ? '#e8f5e9' : '#fffde7'
+                    }}
+                  >
                     <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                     <TableCell>{c.company_name}</TableCell>
                     <TableCell>{c.name}</TableCell>
                     <TableCell>{c.transaction_direction}</TableCell>
                     <TableCell>{c.notes}</TableCell>
-                    <TableCell>{c.is_active ? 'Yes' : 'No'}</TableCell>
+                    {/* <TableCell>{c.is_active ? 'Yes' : 'No'}</TableCell> */}
                     <TableCell align="center">
-                    <Tooltip title={c.is_active ? "Deactivate" : "Reactivate"} arrow>
-  <IconButton
-    color={c.is_active ? "error" : "success"}
-    onClick={() => {
-      setSelectedCostCentre(c);
-      setConfirmDialogOpen(true);
-    }}
-  >
-    <Delete />
-  </IconButton>
-</Tooltip>
-
+                    {/* <Tooltip title={c.is_active ? "Deactivate" : "Reactivate"} arrow>
+                        <IconButton
+                          color={c.is_active ? "error" : "success"}
+                          onClick={() => {
+                            setSelectedCostCentre(c);
+                            setConfirmDialogOpen(true);
+                          }}
+                        >
+                          <Delete />
+                        </IconButton>
+                      </Tooltip> */}
                       <Tooltip title="Edit" arrow>
                         <IconButton color="primary" onClick={() => openEditModal(c)}>
                           <Edit />
@@ -300,13 +301,22 @@ const handleConfirmAction = async () => {
       </Card>
 
       {/* Add Dialog */}
-      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm"  TransitionComponent={Transition} 
-       keepMounted 
-       PaperProps={{ sx: { borderRadius: 3, p: 2 } }} >
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        TransitionComponent={Transition}
+        keepMounted
+        PaperProps={{ sx: { borderRadius: 3, p: 2 } }}
+      >
         <DialogTitle>Add Cost Centre</DialogTitle>
         <DialogContent>
           <TextField
-            select fullWidth margin="dense" label="Company"
+            select
+            fullWidth
+            margin="dense"
+            label="Company"
             value={form.company}
             onChange={(e) => handleRealTimeValidation('company', e.target.value, setForm, form, setFormErrors)}
             error={!!formErrors.company}
@@ -318,7 +328,9 @@ const handleConfirmAction = async () => {
           </TextField>
 
           <TextField
-            fullWidth margin="dense" label="Name"
+            fullWidth
+            margin="dense"
+            label="Name"
             value={form.name}
             onChange={(e) => handleRealTimeValidation('name', e.target.value, setForm, form, setFormErrors)}
             error={Boolean(formErrors.name)}
@@ -326,7 +338,10 @@ const handleConfirmAction = async () => {
           />
 
           <TextField
-            select fullWidth margin="dense" label="Transaction Direction"
+            select
+            fullWidth
+            margin="dense"
+            label="Transaction Direction"
             value={form.transaction_direction}
             onChange={(e) => handleRealTimeValidation('transaction_direction', e.target.value, setForm, form, setFormErrors)}
             error={!!formErrors.transaction_direction}
@@ -338,23 +353,71 @@ const handleConfirmAction = async () => {
           </TextField>
 
           <TextField
-            fullWidth margin="dense" label="Notes" multiline
+            fullWidth
+            margin="dense"
+            label="Notes"
+            multiline
             value={form.notes}
             onChange={(e) => setForm({ ...form, notes: e.target.value })}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={handleAddCostCentre} variant="contained" color="primary">Add</Button>
+       <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button
+            onClick={() => {
+              setOpen(false);
+              setFormErrors({});
+              setForm(defaultForm);
+            }}
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 500,
+              color: '#64748b',
+              '&:hover': {
+                backgroundColor: '#f1f5f9',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleAddCostCentre}
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 500,
+              backgroundColor: '#2196f3',
+              boxShadow: '0 4px 12px rgba(33, 150, 243, 0.4)',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                backgroundColor: '#1976d2',
+                boxShadow: '0 6px 16px rgba(33, 150, 243, 0.5)',
+              },
+            }}
+          >
+            Add
+          </Button>
         </DialogActions>
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="sm">
+      <Dialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        TransitionComponent={Transition}
+        keepMounted
+        PaperProps={{ sx: { borderRadius: 3, p: 2 } }}
+      >
         <DialogTitle>Edit Cost Centre</DialogTitle>
-        <DialogContent dividers>
+        <DialogContent >
           <TextField
-            fullWidth margin="dense" label="Name"
+            fullWidth
+            margin="dense"
+            label="Name"
             value={editForm.name}
             onChange={(e) => handleRealTimeValidation('name', e.target.value, setEditForm, editForm, setEditFormErrors)}
             error={!!editFormErrors.name}
@@ -362,7 +425,10 @@ const handleConfirmAction = async () => {
           />
 
           <TextField
-            select fullWidth margin="dense" label="Transaction Direction"
+            select
+            fullWidth
+            margin="dense"
+            label="Transaction Direction"
             value={editForm.transaction_direction}
             onChange={(e) => handleRealTimeValidation('transaction_direction', e.target.value, setEditForm, editForm, setEditFormErrors)}
             error={!!editFormErrors.transaction_direction}
@@ -374,14 +440,75 @@ const handleConfirmAction = async () => {
           </TextField>
 
           <TextField
-            fullWidth margin="dense" label="Notes" multiline
+            fullWidth
+            margin="dense"
+            label="Notes"
+            multiline
             value={editForm.notes}
             onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
           />
+
+          <FormControl component="fieldset" margin="dense">
+            <FormLabel component="legend">Status</FormLabel>
+            <RadioGroup
+              row
+              value={editForm.is_active}
+              onChange={(e) => setEditForm({ ...editForm, is_active: e.target.value === 'true' })}
+              sx={{ gap: 2 }}
+            >
+              <FormControlLabel
+                value={true}
+                control={<Radio sx={{ color: '#4caf50', '&.Mui-checked': { color: '#4caf50' } }} />}
+                label="Active"
+                sx={{ '& .MuiFormControlLabel-label': { color: '#424242' } }}
+              />
+              <FormControlLabel
+                value={false}
+                control={<Radio sx={{ color: '#ff9800', '&.Mui-checked': { color: '#ff9800' } }} />}
+                label="Inactive"
+                sx={{ '& .MuiFormControlLabel-label': { color: '#424242' } }}
+              />
+            </RadioGroup>
+          </FormControl>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditOpen(false)}>Cancel</Button>
-          <Button onClick={handleEditCostCentre} variant="contained" color="primary">Save</Button>
+       <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button
+            onClick={() => {
+              setEditOpen(false);
+              setEditFormErrors({});
+              setEditForm(defaultEditForm);
+            }}
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 500,
+              color: '#64748b',
+              '&:hover': {
+                backgroundColor: '#f1f5f9',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleEditCostCentre}
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 500,
+              backgroundColor: '#2196f3',
+              boxShadow: '0 4px 12px rgba(33, 150, 243, 0.4)',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                backgroundColor: '#1976d2',
+                boxShadow: '0 6px 16px rgba(33, 150, 243, 0.5)',
+              },
+            }}
+          >
+            Save
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -389,7 +516,7 @@ const handleConfirmAction = async () => {
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
         <Alert
           onClose={() => setSnackbar({ ...snackbar, open: false })}
@@ -400,16 +527,7 @@ const handleConfirmAction = async () => {
         </Alert>
       </Snackbar>
 
-            <ConfirmDialog
-  open={confirmDialogOpen}
-  onClose={() => setConfirmDialogOpen(false)}
-  onConfirm={handleConfirmAction}
-  title={selectedCostCentre?.is_active ? 'Deactivate Cost Centre?' : 'Reactivate Cost Centre?'}
-  content={`Are you sure you want to ${selectedCostCentre?.is_active ? 'deactivate' : 'reactivate'} this bank: ${selectedCostCentre?.name}?`}
-  confirmLabel={selectedCostCentre?.is_active ? 'Deactivate' : 'Reactivate'}
-/>
-
-
+  
     </div>
   );
 }

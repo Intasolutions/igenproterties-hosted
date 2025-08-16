@@ -6,7 +6,9 @@ import {
   Dashboard, People, Business, AccountBalance, Category,
   ReceiptLong, Logout, Assignment, Apartment, BusinessCenter,
   Receipt, Inventory, Contacts, Store, Gavel, Assessment,
-} from '@mui/icons-material'; // ✅ Added Assessment icon
+  UploadFile, // Bank Uploads
+  Rule,       // ✅ NEW: icon for Review & Classify
+} from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 
@@ -15,9 +17,11 @@ const allMenuItems = [
   { text: 'Users', icon: <People />, path: '/users', roles: ['SUPER_USER'] },
   { text: 'Companies', icon: <Business />, path: '/companies', roles: ['SUPER_USER'] },
   { text: 'Banks', icon: <AccountBalance />, path: '/banks', roles: ['SUPER_USER', 'ACCOUNTANT'] },
+    { text: 'Bank Uploads', icon: <UploadFile />, path: '/bank-uploads', roles: ['SUPER_USER', 'ACCOUNTANT', 'CENTER_HEAD'] },
   { text: 'Cost Centres', icon: <Category />, path: '/cost-centres', roles: ['SUPER_USER', 'ACCOUNTANT'] },
   { text: 'Transaction Types', icon: <ReceiptLong />, path: '/transaction-types', roles: ['SUPER_USER', 'ACCOUNTANT'] },
-  { text: 'Transactions', icon: <Assignment />, path: '/transactions', roles: ['SUPER_USER', 'ACCOUNTANT'] },
+    { text: 'Review & Classify', icon: <Rule />, path: '/tx-classify', roles: ['SUPER_USER', 'ACCOUNTANT', 'CENTER_HEAD'] },
+  // { text: 'Transactions', icon: <Assignment />, path: '/transactions', roles: ['SUPER_USER', 'ACCOUNTANT'] },
   { text: 'Projects', icon: <Assignment />, path: '/projects', roles: ['SUPER_USER', 'CENTER_HEAD'] },
   { text: 'Properties', icon: <Apartment />, path: '/properties', roles: ['SUPER_USER', 'CENTER_HEAD', 'PROPERTY_MANAGER'] },
   { text: 'Entities', icon: <BusinessCenter />, path: '/entities', roles: ['SUPER_USER'] },
@@ -27,7 +31,10 @@ const allMenuItems = [
   { text: 'Vendors', icon: <Store />, path: '/vendors', roles: ['SUPER_USER', 'PROPERTY_MANAGER'] },
   { text: 'Contracts', icon: <Gavel />, path: '/contracts', roles: ['SUPER_USER', 'ACCOUNTANT', 'PROPERTY_MANAGER'] },
   { text: 'Cash Ledger', icon: <Receipt />, path: '/cash-ledger', roles: ['SUPER_USER', 'ACCOUNTANT'] },
-  { text: 'Entity Report', icon: <Assessment />, path: '/entity-report', roles: ['SUPER_USER', 'CENTER_HEAD', 'ACCOUNTANT'] }, // ✅ NEW
+
+  { text: 'Entity Report', icon: <Assessment />, path: '/entity-report', roles: ['SUPER_USER', 'CENTER_HEAD', 'ACCOUNTANT'] },
+  // ✅ NEW: Review & Classify
+
 ];
 
 export default function Sidebar() {
@@ -37,7 +44,7 @@ export default function Sidebar() {
   const drawerRef = useRef(null);
   const textRefs = useRef([]);
 
-  const userRole = localStorage.getItem('role');
+  const userRole = localStorage.getItem('role') || '';
   const menuItems = allMenuItems.filter(item => item.roles.includes(userRole));
 
   useEffect(() => {
@@ -55,6 +62,9 @@ export default function Sidebar() {
     localStorage.clear();
     navigate('/');
   };
+
+  // Highlight if current path starts with item.path (so /tx-classify/sub also highlights)
+  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
     <Drawer
@@ -76,9 +86,7 @@ export default function Sidebar() {
           flexDirection: 'column',
           transition: 'none',
           scrollbarWidth: 'none',
-          '&::-webkit-scrollbar': {
-            display: 'none',
-          },
+          '&::-webkit-scrollbar': { display: 'none' },
         },
       }}
       PaperProps={{ ref: drawerRef }}
@@ -110,7 +118,7 @@ export default function Sidebar() {
                 my: 0.5,
                 borderRadius: '12px',
                 paddingY: '8px',
-                backgroundColor: location.pathname === item.path ? '#3B82F6' : 'transparent',
+                backgroundColor: isActive(item.path) ? '#3B82F6' : 'transparent',
                 '&:hover': {
                   backgroundColor: '#3B82F6',
                   transform: 'scale(1.03)',

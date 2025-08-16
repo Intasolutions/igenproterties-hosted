@@ -1,6 +1,10 @@
 from django.db import models
 
+# reports/models.py
+from django.db import models
+
 class TransactionLedgerCombined(models.Model):
+    id = models.CharField(primary_key=True, max_length=64)  # <- MUST match view column type
     date = models.DateField()
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     cost_centre = models.ForeignKey('cost_centres.CostCentre', on_delete=models.DO_NOTHING)

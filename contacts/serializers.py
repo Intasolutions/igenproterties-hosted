@@ -46,14 +46,15 @@ class ContactSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("PAN must be unique.")
         return value
 
-    def validate(self, data):
-        contact_type = data.get('type')
-        gst = data.get('gst')
-        stakeholder_types = data.get('stakeholder_types')
+def validate(self, data):
+    contact_type = data.get('type', getattr(self.instance, 'type', None))
+    gst = data.get('gst', getattr(self.instance, 'gst', None))
+    stakeholder_types = data.get('stakeholder_types', getattr(self.instance, 'stakeholder_types', None))
 
-        if not stakeholder_types:
-            raise serializers.ValidationError({'stakeholder_types': "At least one stakeholder type is required."})
-        if contact_type == 'Company' and not gst:
-            raise serializers.ValidationError({'gst': "GST number is required for Company type contacts."})
+    if not stakeholder_types:
+        raise serializers.ValidationError({'stakeholder_types': "At least one stakeholder type is required."})
+    if contact_type == 'Company' and not gst:
+        raise serializers.ValidationError({'gst': "GST number is required for Company type contacts."})
 
-        return data
+    return data
+

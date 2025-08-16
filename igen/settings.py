@@ -31,7 +31,7 @@ INSTALLED_APPS = [
     'banks',
     'cost_centres',
     'transaction_types',
-    'transactions',
+   
     'projects',
     'properties',
     'entities',
@@ -44,8 +44,9 @@ INSTALLED_APPS = [
     'reports',
     'contacts',
     'cash_ledger',
+    'bank_uploads',
+    'tx_classify',
 ]
-
 
 
 AUTH_USER_MODEL = 'users.User'
@@ -139,3 +140,4 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
+

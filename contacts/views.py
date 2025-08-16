@@ -39,7 +39,7 @@ class ContactViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Contact.objects.filter(is_active=True).order_by('-created_at')
+        qs = Contact.objects.all().order_by('-created_at')
         if user.role == 'SUPER_USER':
             return qs
         return qs.filter(company__in=user.companies.all())

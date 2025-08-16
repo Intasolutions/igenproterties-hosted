@@ -2,19 +2,46 @@ from rest_framework import serializers
 from .models import Vendor
 from companies.models import Company
 
+
+# Mini serializer for returning only essential company info
+class CompanyMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = ['id', 'name']
+
+
 class VendorSerializer(serializers.ModelSerializer):
+    # Accept company_id in requests
     company_id = serializers.PrimaryKeyRelatedField(
-        queryset=Company.objects.all(), source='company', write_only=True
+        queryset=Company.objects.all(),
+        source='company',
+        write_only=True
     )
-    company = serializers.StringRelatedField(read_only=True)
+    
+    # Return full company object in responses
+    company = CompanyMiniSerializer(read_only=True)
 
     class Meta:
         model = Vendor
         fields = [
-            'id', 'vendor_name', 'vendor_type', 'pan_number', 'gst_number',
-            'contact_person', 'phone_number', 'email', 'bank_name',
-            'bank_account', 'ifsc_code', 'address', 'notes',
-            'created_by', 'created_on', 'is_active', 'company', 'company_id'
+            'id',
+            'vendor_name',
+            'vendor_type',
+            'pan_number',
+            'gst_number',
+            'contact_person',
+            'phone_number',
+            'email',
+            'bank_name',
+            'bank_account',
+            'ifsc_code',
+            'address',
+            'notes',
+            'created_by',
+            'created_on',
+            'is_active',
+            'company',      # Nested object in GET
+            'company_id'    # Accept ID in POST/PUT
         ]
 
     def validate_pan_number(self, value):

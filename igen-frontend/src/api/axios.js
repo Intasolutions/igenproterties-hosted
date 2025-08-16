@@ -1,16 +1,17 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api/', // Your Django API base URL
+  baseURL: 'http://127.0.0.1:8000/api/',
 });
 
-// Request interceptor: Add access token to headers
+
 API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+   if (token) {
+  config.headers.Authorization = `Bearer ${token}`;
+}
+
     return config;
   },
   (error) => {
@@ -46,7 +47,7 @@ API.interceptors.response.use(
           localStorage.setItem('access', newAccessToken);
 
           // Retry original request with new token
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+      originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           return axios(originalRequest);
         } catch (refreshError) {
           // Refresh failed: clear storage and redirect to login
